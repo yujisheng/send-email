@@ -1,6 +1,7 @@
 package com.soft863.sendmail;
 
 import com.soft863.sendmail.config.MailInfo;
+import com.soft863.sendmail.uitl.SendMailResult;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
@@ -17,33 +18,23 @@ import java.util.Date;
  * @Date 2019/3/19 0019 16:10
  */
 public class SendMail {
-    public static String send(MailInfo email) throws Exception {
 
-       /*// 1. 创建参数配置, 用于连接邮件服务器的参数配置
-        Properties props = new Properties();                    // 参数配置
-        props.setProperty("mail.transport.protocol", "smtp");   // 使用的协议（JavaMail规范要求）
-        props.setProperty("mail.smtp.host", new MailUtil().getSMTP(myEmailAccount));   // 发件人的邮箱的 SMTP 服务器地址
-        props.setProperty("mail.smtp.auth", "true");            // 需要请求认证*/
-
-        // 开启 SSL 连接, 以及更详细的发送步骤请看上一篇: 基于 JavaMail 的 Java 邮件发送：简单邮件发送
-
+    public int send(MailInfo mail) throws Exception {
+        // 1. 创建参数配置, 用于连接邮件服务器的参数配置
         // 2. 根据配置创建会话对象, 用于和邮件服务器交互
-        Session session = Session.getInstance(email.getProperties());
+        Session session = Session.getInstance(mail.getProperties());
         // 设置为debug模式, 可以查看详细的发送 log
         session.setDebug(true);
-
         // 3. 创建一封邮件
-        MimeMessage message = createMimeMessage(session, email);
-
+        MimeMessage message = createMimeMessage(session, mail);
         // 也可以保持到本地查看
         // message.writeTo(file_out_put_stream);
-
         // 4. 根据 Session 获取邮件传输对象
         Transport transport = session.getTransport();
 
         // 5. 使用 邮箱账号 和 密码 连接邮件服务器
         //    这里认证的邮箱必须与 message 中的发件人邮箱一致，否则报错
-        transport.connect(email.getEmail(), email.getPassword());
+        transport.connect(mail.getFromEmail(), mail.getFromPassword());
 
         // 6. 发送邮件, 发到所有的收件地址, message.getAllRecipients() 获取到的是在创建邮件对象时添加的所有收件人, 抄送人, 密送人
         transport.sendMessage(message, message.getAllRecipients());
@@ -51,7 +42,7 @@ public class SendMail {
         // 7. 关闭连接
         transport.close();
 
-        return "发送成功";
+        return SendMailResult.SEND_MAIL_SUCCESS;
     }
 
     /**
@@ -62,11 +53,11 @@ public class SendMail {
         MimeMessage message = new MimeMessage(session);
 
         // 2. From: 发件人
-        message.setFrom(new InternetAddress(mail.getEmail(), mail.getName(), "UTF-8"));
+        message.setFrom(new InternetAddress(mail.getFromEmail(), mail.getFromName(), "UTF-8"));
 
         // 3. To: 收件人（可以增加多个收件人、抄送、密送）
+        String[] tccs = mail.getToAddress();
 
-        String[] tccs=mail.getToAddress();
         // 为每个邮件接收者创建一个地址
         Address[] toAdresses = new InternetAddress[tccs.length];
         for (int i=0; i<tccs.length; i++){
